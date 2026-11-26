@@ -1,0 +1,31 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+const rateLimit = require('express-rate-limit');
+const authRoutes = require('./src/routes/authRoutes');
+const restaurantRoutes = require('./src/routes/restaurantRoutes');
+const mealRoutes = require('./src/routes/mealRoutes');
+const clientRoutes = require('./src/routes/clientRoutes');
+const { notFound, errorHandler } = require('./src/middlewares/errorHandler');
+const app = express();
+app.disable('x-powered-by');
+app.use(cors({ origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : ['http://localhost:5173','http://127.0.0.1:5173'] }));
+app.use(express.json({limit:'1mb'}));
+app.use('/api', rateLimit({windowMs:15*60*1000, limit:100, standardHeaders:true, legacyHeaders:false, message:{success:false,message:'Too many requests. Please try again later.'}}));
+app.get('/', (_req,res)=>res.json({success:true,message:'GASTROLUXE API is running'}));
+app.use('/api/auth',authRoutes);
+app.use('/api/restaurants',restaurantRoutes);
+app.use('/api/meals',mealRoutes);
+app.use('/api/client',clientRoutes);
+app.use(notFound); app.use(errorHandler);
+const PORT=process.env.PORT||5000;
+async function start(){
+  if(!process.env.MONGO_URI) throw new Error('MONGO_URI is required. Configure backend/.env; temporary in-memory mode is disabled to prevent data loss.');
+  if(!process.env.JWT_SECRET || process.env.JWT_SECRET.length<32) throw new Error('JWT_SECRET must be configured and contain at least 32 characters.');
+  await mongoose.connect(process.env.MONGO_URI);
+  console.log('MongoDB connected');
+  app.listen(PORT,()=>console.log(`GASTROLUXE API running on port ${PORT}`));
+}
+if(require.main===module) start().catch(e=>{console.error('Startup failed:',e.message);process.exit(1)});
+module.exports=app;

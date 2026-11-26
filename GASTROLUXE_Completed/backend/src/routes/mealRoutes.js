@@ -1,0 +1,2 @@
+const router=require('express').Router();const c=require('../controllers/mealController');const {protect,authorize}=require('../middlewares/auth');const validate=require('../middlewares/validate');const s=require('../validations/schemas');
+router.get('/',c.list);router.get('/:id',c.get);router.post('/',protect,authorize('restaurant_owner','admin'),validate(s.meal),c.create);router.put('/:id',protect,authorize('restaurant_owner','admin'),validate(s.meal),c.update);router.delete('/:id',protect,authorize('restaurant_owner','admin'),c.remove);module.exports=router;
